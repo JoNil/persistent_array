@@ -56,6 +56,14 @@ fn test() {
         assert_eq!(db[1023].b, 0xffeeffee);
     }
     {
+        let db: Result<PersistentArray<Pair>, Error> = PersistentArray::open("README.md");
+
+        match db {
+            Err(Error::WrongMagicBytes) => (),
+            _ => assert!(false),
+        };
+    }
+    {
         let db: Result<PersistentArray<Pair3>, Error> = PersistentArray::open("pair.db");
 
         match db {
