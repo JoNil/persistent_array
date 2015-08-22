@@ -6,7 +6,7 @@ use std::any::TypeId;
 use std::default::Default;
 use std::fs::File;
 use std::hash::{Hash, Hasher, SipHasher};
-use std::io::{self, Write};
+use std::io;
 use std::marker::{PhantomData, Reflect};
 use std::mem::{transmute, size_of};
 use std::ops::{Deref, DerefMut};
@@ -53,54 +53,48 @@ impl<T> PersistentArray<T> where T: Copy + Default + Reflect + 'static {
     /// Creates a new persistent array
     pub fn new<P>(path: P, size: u64) -> Result<PersistentArray<T>, Error>
             where P: AsRef<Path> {
-        
         {
-            let mut file = match File::create(&path) {
+            let file = match File::create(&path) {
                 Ok(file) => file,
                 Err(err) => return Err(Error::UnableToOpenFile(err)),
             };
 
-            let header = Header {
-                magic: *MAGIC_BYTES,
-                size: size,
-                typeid: get_hashed_type_id::<T>(),
-            };
-            let header_arr: &[u8] = unsafe { slice::from_raw_parts(transmute(&header), size_of::<Header>()) };
-
-            match file.write(header_arr) {
-                Ok(written) => {
-                    if written != header_arr.len() {
-                        return Err(Error::UnableToOpenFile(io::Error::new(
-                                   io::ErrorKind::Other, "Unable to write initial data")));
-                    }
-                },
-                Err(err) => return Err(Error::UnableToOpenFile(err)),
-            };
-
-            let element: T = Default::default();
-            let element_arr: &[u8] = unsafe { slice::from_raw_parts(transmute(&element), size_of::<T>()) };
-
-            for _ in 0..size {
-                match file.write(element_arr) {
-                    Ok(written) => {
-                        if written != element_arr.len() {
-                            return Err(Error::UnableToOpenFile(io::Error::new(
-                                       io::ErrorKind::Other, "Unable to write initial data")));
-                        }
-                    },
-                    Err(err) => return Err(Error::UnableToOpenFile(err)),
-                };
+            if let Err(err) = file.set_len(size * size_of::<T>() as u64 + size_of::<Header>() as u64) {
+                return Err(Error::UnableToOpenFile(err));
             }
         }
 
-        let mmap = match Mmap::open_path(&path, Protection::ReadWrite) {
-            Ok(mmap) => mmap,
+        let mut map = match Mmap::open_path(&path, Protection::ReadWrite) {
+            Ok(map) => map,
             Err(err) => return Err(Error::UnableToOpenFile(err)),
         };
 
+        if map.len() as u64 != size * size_of::<T>() as u64 + size_of::<Header>() as u64 {
+            return Err(Error::WrongFileSize);
+        }
+
+        let header: &mut Header = unsafe { transmute(map.mut_ptr()) };
+
+        *header = Header {
+            magic: *MAGIC_BYTES,
+            size: size,
+            typeid: get_hashed_type_id::<T>(),
+        };
+
+        let element: T = Default::default();
+
+        let elements: &mut [T] = unsafe {
+            slice::from_raw_parts_mut(map.mut_ptr().offset(size_of::<Header>() as isize) as *mut T,
+                                      size as usize)
+        };
+
+        for e in elements.iter_mut() {
+            *e = element;
+        }
+
         Ok(PersistentArray {
             phantom_type: PhantomData,
-            map: mmap,
+            map: map,
             elements: size,
         })
     }
@@ -127,7 +121,7 @@ impl<T> PersistentArray<T> where T: Copy + Default + Reflect + 'static {
             return Err(Error::WrongMagicBytes)
         }
 
-        let elements: u64 = ((size - size_of::<Header>()) / size_of::<T>()) as u64;
+        let elements = ((size - size_of::<Header>()) / size_of::<T>()) as u64;
 
         if header.size != elements {
             return Err(Error::WrongFileSize);
