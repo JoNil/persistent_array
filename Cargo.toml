@@ -2,3 +2,6 @@
 name = "persistent_array"
 version = "0.1.0"
 authors = ["Jonathan Nilsson <l.a.jonathan.nilsson@gmail.com>"]
+
+[dependencies]
+memmap = "0.1.0"
