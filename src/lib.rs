@@ -11,20 +11,30 @@ use std::slice;
 
 use memmap::{Mmap, Protection};
 
+const MAGIC_BYTES: &'static [u8; 4] = b"PADB";
+
 #[derive(Debug)]
 pub enum Error {
     UnableToOpenFile(io::Error),
-    //WrongMagicBytes,
-    //WrongTypeId,
-    //WrongFileSize,
+    WrongMagicBytes,
+    WrongTypeId,
+    WrongFileSize,
 }
 
 /// Persistent Array
 ///
 /// A memory mapped array that can be used as a slice.
 pub struct PersistentArray<T> where T: Copy + Default {
-    memory_map: Mmap,
-    memory_type: PhantomData<T>,
+    phantom_type: PhantomData<T>,
+    map: Mmap,
+    elements: u64,
+}
+
+#[repr(C, packed)]
+struct Header {
+    magic: [u8; 4],
+    size: u64,
+    typeid: u64,
 }
 
 impl<T> PersistentArray<T> where T: Copy + Default {
@@ -39,8 +49,25 @@ impl<T> PersistentArray<T> where T: Copy + Default {
                 Err(err) => return Err(Error::UnableToOpenFile(err)),
             };
 
+            let header = Header {
+                magic: *MAGIC_BYTES,
+                size: size,
+                typeid: 0,
+            };
+            let header_arr: &[u8] = unsafe { slice::from_raw_parts(transmute(&header), size_of::<Header>()) };
+
+            match file.write(header_arr) {
+                Ok(written) => {
+                    if written != header_arr.len() {
+                        return Err(Error::UnableToOpenFile(io::Error::new(
+                                   io::ErrorKind::Other, "Unable to write initial data")));
+                    }
+                },
+                Err(err) => return Err(Error::UnableToOpenFile(err)),
+            };
+
             let element: T = Default::default();
-            let element_arr: &[u8] = unsafe { slice::from_raw_parts(transmute(&element), size_of::<T>()) }; 
+            let element_arr: &[u8] = unsafe { slice::from_raw_parts(transmute(&element), size_of::<T>()) };
 
             for _ in 0..size {
                 match file.write(element_arr) {
@@ -61,8 +88,9 @@ impl<T> PersistentArray<T> where T: Copy + Default {
         };
 
         Ok(PersistentArray {
-            memory_map: mmap,
-            memory_type: PhantomData,
+            phantom_type: PhantomData,
+            map: mmap,
+            elements: size,
         })
     }
 
@@ -70,14 +98,34 @@ impl<T> PersistentArray<T> where T: Copy + Default {
     pub fn open<P>(path: P) -> Result<PersistentArray<T>, Error>
             where P: AsRef<Path> {
 
-        let mmap = match Mmap::open_path(&path, Protection::ReadWrite) {
-            Ok(mmap) => mmap,
+        let map = match Mmap::open_path(&path, Protection::ReadWrite) {
+            Ok(map) => map,
             Err(err) => return Err(Error::UnableToOpenFile(err)),
         };
 
+        let ptr = map.ptr();
+        let size = map.len();
+
+        if size < size_of::<Header>() {
+            return Err(Error::WrongFileSize);
+        }
+
+        let header: &Header = unsafe { transmute(ptr) };
+
+        if header.magic != *MAGIC_BYTES {
+            return Err(Error::WrongMagicBytes)
+        }
+
+        let elements: u64 = ((size - size_of::<Header>()) / size_of::<T>()) as u64;
+
+        if header.size != elements {
+            return Err(Error::WrongFileSize);
+        }
+
         Ok(PersistentArray {
-            memory_map: mmap,
-            memory_type: PhantomData,
+            phantom_type: PhantomData,
+            map: map,
+            elements: elements,
         })
     }
 }
@@ -86,21 +134,19 @@ impl<T> Deref for PersistentArray<T> where T: Copy + Default {
     type Target = [T];
 
     fn deref(&self) -> &[T] {
-
-        let ptr = self.memory_map.ptr();
-        let length = self.memory_map.len() / size_of::<T>();
-
-        unsafe { slice::from_raw_parts(ptr as *const T, length) }
+        unsafe {
+            slice::from_raw_parts(self.map.ptr().offset(size_of::<Header>() as isize) as *const T,
+                                  self.elements as usize)
+        }
     }
 }
 
 impl<T> DerefMut for PersistentArray<T> where T: Copy + Default {
 
     fn deref_mut(&mut self) -> &mut [T] {
-
-        let ptr = self.memory_map.mut_ptr();
-        let length = self.memory_map.len() / size_of::<T>();
-
-        unsafe { slice::from_raw_parts_mut(ptr as *mut T, length) }
+        unsafe {
+            slice::from_raw_parts_mut(self.map.mut_ptr().offset(size_of::<Header>() as isize) as *mut T,
+                                      self.elements as usize)
+        }
     }
 }

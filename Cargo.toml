@@ -1,6 +1,6 @@
 [package]
 name = "persistent_array"
-version = "0.1.1"
+version = "0.2.0"
 authors = ["Jonathan Nilsson <l.a.jonathan.nilsson@gmail.com>"]
 license = "MIT"
 repository = "https://github.com/JoNil/persistent_array"

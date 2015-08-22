@@ -9,7 +9,6 @@ struct Pair {
     b: u32,
 }
 
-
 impl Default for Pair {
     fn default() -> Pair {
         Pair {
