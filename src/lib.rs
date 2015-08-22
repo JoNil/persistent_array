@@ -1,9 +1,13 @@
+#![feature(reflect_marker)]
+
 extern crate memmap;
 
+use std::any::TypeId;
 use std::default::Default;
 use std::fs::File;
+use std::hash::{Hash, Hasher, SipHasher};
 use std::io::{self, Write};
-use std::marker::PhantomData;
+use std::marker::{PhantomData, Reflect};
 use std::mem::{transmute, size_of};
 use std::ops::{Deref, DerefMut};
 use std::path::Path;
@@ -17,14 +21,14 @@ const MAGIC_BYTES: &'static [u8; 4] = b"PADB";
 pub enum Error {
     UnableToOpenFile(io::Error),
     WrongMagicBytes,
-    WrongTypeId,
     WrongFileSize,
+    WrongTypeId,
 }
 
 /// Persistent Array
 ///
 /// A memory mapped array that can be used as a slice.
-pub struct PersistentArray<T> where T: Copy + Default {
+pub struct PersistentArray<T> where T: Copy + Default + Reflect + 'static {
     phantom_type: PhantomData<T>,
     map: Mmap,
     elements: u64,
@@ -37,7 +41,14 @@ struct Header {
     typeid: u64,
 }
 
-impl<T> PersistentArray<T> where T: Copy + Default {
+fn get_hashed_type_id<T: Reflect + 'static>() -> u64 {
+    let id = TypeId::of::<T>();
+    let mut s = SipHasher::new();
+    id.hash(&mut s);
+    s.finish()
+}
+
+impl<T> PersistentArray<T> where T: Copy + Default + Reflect + 'static {
 
     /// Creates a new persistent array
     pub fn new<P>(path: P, size: u64) -> Result<PersistentArray<T>, Error>
@@ -52,7 +63,7 @@ impl<T> PersistentArray<T> where T: Copy + Default {
             let header = Header {
                 magic: *MAGIC_BYTES,
                 size: size,
-                typeid: 0,
+                typeid: get_hashed_type_id::<T>(),
             };
             let header_arr: &[u8] = unsafe { slice::from_raw_parts(transmute(&header), size_of::<Header>()) };
 
@@ -122,6 +133,10 @@ impl<T> PersistentArray<T> where T: Copy + Default {
             return Err(Error::WrongFileSize);
         }
 
+        if header.typeid != get_hashed_type_id::<T>() {
+            return Err(Error::WrongTypeId);   
+        }
+
         Ok(PersistentArray {
             phantom_type: PhantomData,
             map: map,
@@ -130,7 +145,7 @@ impl<T> PersistentArray<T> where T: Copy + Default {
     }
 }
 
-impl<T> Deref for PersistentArray<T> where T: Copy + Default {
+impl<T> Deref for PersistentArray<T> where T: Copy + Default + Reflect + 'static {
     type Target = [T];
 
     fn deref(&self) -> &[T] {
@@ -141,7 +156,7 @@ impl<T> Deref for PersistentArray<T> where T: Copy + Default {
     }
 }
 
-impl<T> DerefMut for PersistentArray<T> where T: Copy + Default {
+impl<T> DerefMut for PersistentArray<T> where T: Copy + Default + Reflect + 'static {
 
     fn deref_mut(&mut self) -> &mut [T] {
         unsafe {

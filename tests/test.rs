@@ -1,6 +1,6 @@
 extern crate persistent_array;
 
-use persistent_array::PersistentArray;
+use persistent_array::{PersistentArray, Error};
 use std::default::Default;
 
 #[derive(Debug, Copy, Clone)]
@@ -16,6 +16,19 @@ impl Default for Pair {
             b: 0xffeeffee,
         }
     }
+}
+
+#[derive(Debug, Default, Copy, Clone)]
+struct Pair3 {
+    a: u32,
+    b: u32,
+    c: u32,
+}
+
+#[derive(Debug, Default, Copy, Clone)]
+struct OtherPair2 {
+    a: u32,
+    b: u32,
 }
 
 #[test]
@@ -41,5 +54,22 @@ fn test() {
 
         assert_eq!(db[1023].a, 0xddaaddaa);
         assert_eq!(db[1023].b, 0xffeeffee);
+    }
+    {
+        let db: Result<PersistentArray<Pair3>, Error> = PersistentArray::open("pair.db");
+
+        match db {
+            Err(Error::WrongFileSize) => (),
+            _ => assert!(false),
+        };
+        
+    }
+    {
+        let db: Result<PersistentArray<OtherPair2>, Error> = PersistentArray::open("pair.db");
+
+        match db {
+            Err(Error::WrongTypeId) => (),
+            _ => assert!(false),
+        };
     }
 }
