@@ -1,51 +1,106 @@
 extern crate memmap;
 
-pub mod persistent_array;
-
-#[cfg(test)]
 use std::default::Default;
+use std::fs::File;
+use std::io::{self, Write};
+use std::marker::PhantomData;
+use std::mem::{transmute, size_of};
+use std::ops::{Deref, DerefMut};
+use std::path::Path;
+use std::slice;
 
-#[cfg(test)]
-#[derive(Debug, Copy, Clone)]
-struct Pair {
-    a: u32,
-    b: u32,
+use memmap::{Mmap, Protection};
+
+#[derive(Debug)]
+pub enum Error {
+    UnableToOpenFile(io::Error),
+    //WrongMagicBytes,
+    //WrongTypeId,
+    //WrongFileSize,
 }
 
-#[cfg(test)]
-impl Default for Pair {
-    fn default() -> Pair {
-        Pair {
-            a: 0xddaaddaa,
-            b: 0xffeeffee,
+/// Persistent Array
+///
+/// A memory mapped array that can be used as a slice.
+pub struct PersistentArray<T> where T: Copy + Default {
+    memory_map: Mmap,
+    memory_type: PhantomData<T>,
+}
+
+impl<T> PersistentArray<T> where T: Copy + Default {
+
+    /// Creates a new persistent array
+    pub fn new<P>(path: P, size: u64) -> Result<PersistentArray<T>, Error>
+            where P: AsRef<Path> {
+        
+        {
+            let mut file = match File::create(&path) {
+                Ok(file) => file,
+                Err(err) => return Err(Error::UnableToOpenFile(err)),
+            };
+
+            let element: T = Default::default();
+            let element_arr: &[u8] = unsafe { slice::from_raw_parts(transmute(&element), size_of::<T>()) }; 
+
+            for _ in 0..size {
+                match file.write(element_arr) {
+                    Ok(written) => {
+                        if written != element_arr.len() {
+                            return Err(Error::UnableToOpenFile(io::Error::new(
+                                       io::ErrorKind::Other, "Unable to write initial data")));
+                        }
+                    },
+                    Err(err) => return Err(Error::UnableToOpenFile(err)),
+                };
+            }
         }
+
+        let mmap = match Mmap::open_path(&path, Protection::ReadWrite) {
+            Ok(mmap) => mmap,
+            Err(err) => return Err(Error::UnableToOpenFile(err)),
+        };
+
+        Ok(PersistentArray {
+            memory_map: mmap,
+            memory_type: PhantomData,
+        })
+    }
+
+    /// Opens an existing persistent array
+    pub fn open<P>(path: P) -> Result<PersistentArray<T>, Error>
+            where P: AsRef<Path> {
+
+        let mmap = match Mmap::open_path(&path, Protection::ReadWrite) {
+            Ok(mmap) => mmap,
+            Err(err) => return Err(Error::UnableToOpenFile(err)),
+        };
+
+        Ok(PersistentArray {
+            memory_map: mmap,
+            memory_type: PhantomData,
+        })
     }
 }
 
-#[test]
-fn test() {
-    use persistent_array::PersistentArray;
+impl<T> Deref for PersistentArray<T> where T: Copy + Default {
+    type Target = [T];
 
-    {
-        let mut db: PersistentArray<Pair> = PersistentArray::new("pair.db", 1024).unwrap();
+    fn deref(&self) -> &[T] {
 
-        db[0] = Pair { a: 1, b: 2 };
+        let ptr = self.memory_map.ptr();
+        let length = self.memory_map.len() / size_of::<T>();
 
-        assert_eq!(db[0].a, 1);
-        assert_eq!(db[0].b, 2);
-
-        assert_eq!(db[1023].a, 0xddaaddaa);
-        assert_eq!(db[1023].b, 0xffeeffee);
+        unsafe { slice::from_raw_parts(ptr as *const T, length) }
     }
-    {
-        let db: PersistentArray<Pair> = PersistentArray::open("pair.db").unwrap();
+}
 
-        assert_eq!(db.len(), 1024);
+impl<T> DerefMut for PersistentArray<T> where T: Copy + Default {
 
-        assert_eq!(db[0].a, 1);
-        assert_eq!(db[0].b, 2);
+    fn deref_mut(&mut self) -> &mut [T] {
 
-        assert_eq!(db[1023].a, 0xddaaddaa);
-        assert_eq!(db[1023].b, 0xffeeffee);
+        let ptr = self.memory_map.mut_ptr();
+        let length = self.memory_map.len() / size_of::<T>();
+
+        unsafe { slice::from_raw_parts_mut(ptr as *mut T, length) }
     }
 }
