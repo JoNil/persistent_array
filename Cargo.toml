@@ -3,5 +3,10 @@ name = "persistent_array"
 version = "0.1.0"
 authors = ["Jonathan Nilsson <l.a.jonathan.nilsson@gmail.com>"]
 
+description = "Persistent array is a library for working with memory mapped arrays"
+readme = "README.md"
+license = "MIT"
+repository = "https://github.com/JoNil/persistent_array"
+
 [dependencies]
 memmap = "0.1.0"
