@@ -25,10 +25,13 @@ pub enum Error {
     WrongTypeId,
 }
 
+pub trait TypeBounds: Copy + Default + Reflect + 'static {}
+impl<T: Copy + Default + Reflect + 'static> TypeBounds for T {}
+
 /// Persistent Array
 ///
 /// A memory mapped array that can be used as a slice.
-pub struct PersistentArray<T> where T: Copy + Default + Reflect + 'static {
+pub struct PersistentArray<T: TypeBounds> {
     phantom_type: PhantomData<T>,
     map: Mmap,
     elements: u64,
@@ -48,7 +51,7 @@ fn get_hashed_type_id<T: Reflect + 'static>() -> u64 {
     s.finish()
 }
 
-impl<T> PersistentArray<T> where T: Copy + Default + Reflect + 'static {
+impl<T: TypeBounds> PersistentArray<T> {
 
     /// Creates a new persistent array
     pub fn new<P>(path: P, size: u64) -> Result<PersistentArray<T>, Error>
@@ -139,7 +142,7 @@ impl<T> PersistentArray<T> where T: Copy + Default + Reflect + 'static {
     }
 }
 
-impl<T> Deref for PersistentArray<T> where T: Copy + Default + Reflect + 'static {
+impl<T: TypeBounds> Deref for PersistentArray<T> {
     type Target = [T];
 
     fn deref(&self) -> &[T] {
@@ -150,7 +153,7 @@ impl<T> Deref for PersistentArray<T> where T: Copy + Default + Reflect + 'static
     }
 }
 
-impl<T> DerefMut for PersistentArray<T> where T: Copy + Default + Reflect + 'static {
+impl<T: TypeBounds> DerefMut for PersistentArray<T> {
 
     fn deref_mut(&mut self) -> &mut [T] {
         unsafe {
