@@ -20,7 +20,7 @@ fn bench(b: &mut Bencher) {
 
     b.bytes = SIZE * size_of::<Data>() as u64;
     b.iter(|| {
-        let mut db: PersistentArray<Data> = PersistentArray::open("bench.db").unwrap();
+        let mut db = PersistentArray::<Data>::open("bench.db").unwrap();
         for i in 0..SIZE {
             db[i as usize].data = i as u64;
         }

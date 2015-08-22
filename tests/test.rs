@@ -34,7 +34,7 @@ struct OtherPair2 {
 #[test]
 fn test() {
     {
-        let mut db: PersistentArray<Pair> = PersistentArray::new("pair.db", 1024).unwrap();
+        let mut db = PersistentArray::<Pair>::new("pair.db", 1024).unwrap();
 
         db[0] = Pair { a: 1, b: 2 };
 
@@ -45,7 +45,7 @@ fn test() {
         assert_eq!(db[1023].b, 0xffeeffee);
     }
     {
-        let db: PersistentArray<Pair> = PersistentArray::open("pair.db").unwrap();
+        let db = PersistentArray::<Pair>::open("pair.db").unwrap();
 
         assert_eq!(db.len(), 1024);
 
@@ -56,7 +56,7 @@ fn test() {
         assert_eq!(db[1023].b, 0xffeeffee);
     }
     {
-        let db: Result<PersistentArray<Pair>, Error> = PersistentArray::open("README.md");
+        let db = PersistentArray::<Pair>::open("README.md");
 
         match db {
             Err(Error::WrongMagicBytes) => (),
@@ -64,7 +64,7 @@ fn test() {
         };
     }
     {
-        let db: Result<PersistentArray<Pair3>, Error> = PersistentArray::open("pair.db");
+        let db = PersistentArray::<Pair3>::open("pair.db");
 
         match db {
             Err(Error::WrongFileSize) => (),
@@ -73,7 +73,7 @@ fn test() {
         
     }
     {
-        let db: Result<PersistentArray<OtherPair2>, Error> = PersistentArray::open("pair.db");
+        let db = PersistentArray::<OtherPair2>::open("pair.db");
 
         match db {
             Err(Error::WrongTypeId) => (),
