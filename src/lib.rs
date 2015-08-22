@@ -1,17 +1,18 @@
 extern crate memmap;
 
-mod persistent_array;
+pub mod persistent_array;
 
+#[cfg(test)]
 use std::default::Default;
 
-use persistent_array::PersistentArray;
-
+#[cfg(test)]
 #[derive(Debug, Copy, Clone)]
 struct Pair {
     a: u32,
     b: u32,
 }
 
+#[cfg(test)]
 impl Default for Pair {
     fn default() -> Pair {
         Pair {
@@ -23,6 +24,8 @@ impl Default for Pair {
 
 #[test]
 fn test() {
+    use persistent_array::PersistentArray;
+
     {
         let mut db: PersistentArray<Pair> = PersistentArray::new("pair.db", 1024).unwrap();
 

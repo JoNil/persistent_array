@@ -78,7 +78,7 @@ impl<T> PersistentArray<T> where T: Copy + Default {
 impl<T> Deref for PersistentArray<T> where T: Copy + Default {
     type Target = [T];
 
-    fn deref<'a>(&'a self) -> &'a [T] {
+    fn deref(&self) -> &[T] {
 
         let ptr = self.memory_map.ptr();
         let length = self.memory_map.len() / size_of::<T>();
@@ -89,7 +89,7 @@ impl<T> Deref for PersistentArray<T> where T: Copy + Default {
 
 impl<T> DerefMut for PersistentArray<T> where T: Copy + Default {
 
-    fn deref_mut<'a>(&'a mut self) -> &'a mut [T] {
+    fn deref_mut(&mut self) -> &mut [T] {
 
         let ptr = self.memory_map.mut_ptr();
         let length = self.memory_map.len() / size_of::<T>();
