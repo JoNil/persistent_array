@@ -1,12 +1,17 @@
 [package]
 name = "persistent_array"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["Jonathan Nilsson <l.a.jonathan.nilsson@gmail.com>"]
-
-description = "Persistent array is a library for working with memory mapped arrays"
-readme = "README.md"
 license = "MIT"
 repository = "https://github.com/JoNil/persistent_array"
+documentation = "https://jonil.github.io/persistent_array/persistent_array/index.html"
+description = "Persistent array is a library for working with memory mapped arrays"
+readme = "README.md"
+
+exclude = [
+  ".gitignore",
+  ".travis.yml",
+]
 
 [dependencies]
 memmap = "*"
