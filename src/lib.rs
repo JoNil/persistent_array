@@ -1,19 +1,16 @@
-#![feature(reflect_marker)]
-
+extern crate layout_id;
 extern crate memmap;
 
-use std::any::TypeId;
+use layout_id::layout_id;
+use memmap::{Mmap, Protection};
 use std::default::Default;
 use std::fs::File;
-use std::hash::{Hash, Hasher, SipHasher};
 use std::io;
-use std::marker::{PhantomData, Reflect};
+use std::marker::PhantomData;
 use std::mem::{transmute, size_of};
 use std::ops::{Deref, DerefMut};
 use std::path::Path;
 use std::slice;
-
-use memmap::{Mmap, Protection};
 
 const MAGIC_BYTES: &'static [u8; 4] = b"PADB";
 
@@ -25,8 +22,8 @@ pub enum Error {
     WrongTypeId,
 }
 
-pub trait TypeBounds: Copy + Default + Reflect + 'static {}
-impl<T: Copy + Default + Reflect + 'static> TypeBounds for T {}
+pub trait TypeBounds: Copy + Default {}
+impl<T: Copy + Default> TypeBounds for T {}
 
 /// Persistent Array
 ///
@@ -42,13 +39,6 @@ struct Header {
     magic: [u8; 4],
     size: u64,
     typeid: u64,
-}
-
-fn get_hashed_type_id<T: Reflect + 'static>() -> u64 {
-    let id = TypeId::of::<T>();
-    let mut s = SipHasher::new();
-    id.hash(&mut s);
-    s.finish()
 }
 
 impl<T: TypeBounds> PersistentArray<T> {
@@ -81,7 +71,7 @@ impl<T: TypeBounds> PersistentArray<T> {
         *header = Header {
             magic: *MAGIC_BYTES,
             size: size,
-            typeid: get_hashed_type_id::<T>(),
+            typeid: layout_id::<T>(),
         };
 
         let element: T = Default::default();
@@ -130,7 +120,7 @@ impl<T: TypeBounds> PersistentArray<T> {
             return Err(Error::WrongFileSize);
         }
 
-        if header.typeid != get_hashed_type_id::<T>() {
+        if header.typeid != layout_id::<T>() {
             return Err(Error::WrongTypeId);   
         }
 
