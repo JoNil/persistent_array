@@ -22,13 +22,10 @@ pub enum Error {
     WrongTypeId,
 }
 
-pub trait TypeBounds: Copy + Default {}
-impl<T: Copy + Default> TypeBounds for T {}
-
 /// Persistent Array
 ///
 /// A memory mapped array that can be used as a slice.
-pub struct PersistentArray<T: TypeBounds> {
+pub struct PersistentArray<T> {
     phantom_type: PhantomData<T>,
     map: Mmap,
     elements: u64,
@@ -41,7 +38,7 @@ struct Header {
     typeid: u64,
 }
 
-impl<T: TypeBounds> PersistentArray<T> {
+impl<T: Copy + Default> PersistentArray<T> {
 
     /// Creates a new persistent array
     pub fn new<P>(path: P, size: u64) -> Result<PersistentArray<T>, Error>
@@ -132,7 +129,7 @@ impl<T: TypeBounds> PersistentArray<T> {
     }
 }
 
-impl<T: TypeBounds> Deref for PersistentArray<T> {
+impl<T> Deref for PersistentArray<T> {
     type Target = [T];
 
     fn deref(&self) -> &[T] {
@@ -143,7 +140,7 @@ impl<T: TypeBounds> Deref for PersistentArray<T> {
     }
 }
 
-impl<T: TypeBounds> DerefMut for PersistentArray<T> {
+impl<T> DerefMut for PersistentArray<T> {
 
     fn deref_mut(&mut self) -> &mut [T] {
         unsafe {
