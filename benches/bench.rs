@@ -1,4 +1,10 @@
+#![feature(plugin)]
 #![feature(test)]
+
+#![plugin(clippy)]
+
+#![warn(cast_possible_truncation, cast_possible_wrap, cast_precision_loss, cast_sign_loss,
+        non_ascii_literal, shadow_same, string_add, string_add_assign, unicode_not_nfc)]
 
 extern crate persistent_array;
 extern crate test;
