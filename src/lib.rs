@@ -1,8 +1,17 @@
+#![feature(plugin)]
+
+#![plugin(clippy)]
+
+#![warn(cast_possible_truncation, cast_possible_wrap, cast_precision_loss, cast_sign_loss,
+        non_ascii_literal, shadow_same, string_add, string_add_assign, unicode_not_nfc)]
+
 extern crate layout_id;
 extern crate memmap;
+extern crate num;
 
 use layout_id::layout_id;
 use memmap::{Mmap, Protection};
+use num::traits::NumCast;
 use std::default::Default;
 use std::fs::File;
 use std::io;
@@ -74,8 +83,8 @@ impl<T: Copy + Default> PersistentArray<T> {
         let element: T = Default::default();
 
         let elements: &mut [T] = unsafe {
-            slice::from_raw_parts_mut(map.mut_ptr().offset(size_of::<Header>() as isize) as *mut T,
-                                      size as usize)
+            slice::from_raw_parts_mut(map.mut_ptr().offset(NumCast::from(size_of::<Header>()).unwrap()) as *mut T,
+                                      NumCast::from(size).unwrap())
         };
 
         for e in elements.iter_mut() {
@@ -134,8 +143,8 @@ impl<T> Deref for PersistentArray<T> {
 
     fn deref(&self) -> &[T] {
         unsafe {
-            slice::from_raw_parts(self.map.ptr().offset(size_of::<Header>() as isize) as *const T,
-                                  self.elements as usize)
+            slice::from_raw_parts(self.map.ptr().offset(NumCast::from(size_of::<Header>()).unwrap()) as *const T,
+                                  NumCast::from(self.elements).unwrap())
         }
     }
 }
@@ -144,8 +153,8 @@ impl<T> DerefMut for PersistentArray<T> {
 
     fn deref_mut(&mut self) -> &mut [T] {
         unsafe {
-            slice::from_raw_parts_mut(self.map.mut_ptr().offset(size_of::<Header>() as isize) as *mut T,
-                                      self.elements as usize)
+            slice::from_raw_parts_mut(self.map.mut_ptr().offset(NumCast::from(size_of::<Header>()).unwrap()) as *mut T,
+                                      NumCast::from(self.elements).unwrap())
         }
     }
 }
