@@ -13,8 +13,14 @@ exclude = [
   ".travis.yml",
 ]
 
+[features]
+use_clippy = ["clippy"]
+
 [dependencies]
-clippy = "*"
 layout_id = "*"
 memmap = "*"
 num = "*"
+
+[dependencies.clippy]
+version = "*"
+optional = true
