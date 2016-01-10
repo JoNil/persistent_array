@@ -1,10 +1,10 @@
-#![feature(plugin)]
-
-#![cfg_attr(feature = "use_clippy", plugin(clippy))]
-
-#![cfg_attr(feature = "use_clippy",
-   warn(cast_possible_truncation, cast_possible_wrap, cast_precision_loss, cast_sign_loss,
-        non_ascii_literal, shadow_same, string_add, string_add_assign, unicode_not_nfc))]
+// Copyright (c) 2016 Jonathan Nilsson
+//
+// Licensed under the Apache License, Version 2.0
+// <LICENSE-APACHE or http://www.apache.org/licenses/LICENSE-2.0> or the MIT
+// license <LICENSE-MIT or http://opensource.org/licenses/MIT>, at your
+// option. All files in the project carrying such notice may not be copied,
+// modified, or distributed except according to those terms.
 
 extern crate layout_id;
 extern crate memmap;

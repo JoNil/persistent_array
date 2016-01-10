@@ -8,6 +8,7 @@ Persistent array is a library for working with memory mapped arrays
 
 ## License
 
-Persistent array is distributed under the terms of the MIT license.
-
-See [LICENSE](LICENSE) for details.
+Persistent array is Licensed under either of
+ * Apache License, Version 2.0 ([LICENSE-APACHE](LICENSE-APACHE) or http://www.apache.org/licenses/LICENSE-2.0)
+ * MIT license ([LICENSE-MIT](LICENSE-MIT) or http://opensource.org/licenses/MIT)
+at your option.
