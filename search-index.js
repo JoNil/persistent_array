@@ -1,0 +1,3 @@
+var searchIndex = {};
+searchIndex["persistent_array"] = {"doc":"","items":[[3,"PersistentArray","persistent_array","Persistent Array",null,null],[4,"Error","","",null,null],[13,"UnableToOpenFile","","",0,null],[13,"WrongMagicBytes","","",0,null],[13,"WrongFileSize","","",0,null],[13,"WrongTypeId","","",0,null],[11,"fmt","","",0,{"inputs":[{"name":"error"},{"name":"formatter"}],"output":{"name":"result"}}],[11,"new","","Creates a new persistent array",1,{"inputs":[{"name":"p"},{"name":"u64"}],"output":{"name":"result"}}],[11,"open","","Opens an existing persistent array",1,{"inputs":[{"name":"p"}],"output":{"name":"result"}}],[11,"deref","","",1,null],[11,"deref_mut","","",1,null]],"paths":[[4,"Error"],[3,"PersistentArray"]]};
+initSearch(searchIndex);
