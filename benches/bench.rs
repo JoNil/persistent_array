@@ -15,7 +15,7 @@ use persistent_array::PersistentArray;
 use std::mem::size_of;
 use test::Bencher;
 
-const SIZE: u64 = 2*1024*1024;
+const SIZE: u64 = 2 * 1024 * 1024;
 
 #[derive(Debug, Default, Copy, Clone)]
 struct Data {

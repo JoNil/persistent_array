@@ -8,7 +8,7 @@
 
 extern crate persistent_array;
 
-use persistent_array::{PersistentArray, Error};
+use persistent_array::{Error, PersistentArray};
 use std::default::Default;
 
 #[derive(Debug, Copy, Clone)]
@@ -78,7 +78,6 @@ fn test() {
             Err(Error::WrongFileSize) => (),
             _ => assert!(false),
         };
-        
     }
     {
         let db = PersistentArray::<OtherPair2>::open("pair.db");

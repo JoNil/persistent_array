@@ -1,6 +1,6 @@
 [package]
 name = "persistent_array"
-version = "0.4.0"
+version = "0.5.0"
 authors = ["Jonathan Nilsson <l.a.jonathan.nilsson@gmail.com>"]
 license = "MIT/Apache-2.0"
 repository = "https://github.com/JoNil/persistent_array"
@@ -15,5 +15,4 @@ exclude = [
 
 [dependencies]
 layout_id = "0.3.0"
-memmap = "0.2"
-num = "0.1"
+memmap = "0.6"
